@@ -7,20 +7,24 @@ metadata:
     "volcano.sh/job-type": "MPI"
 spec:
   # 设置最小需要的服务 (小于总replicas数)
-  minAvailable: 3
+  minAvailable: 3   
   schedulerName: volcano
   plugins:
-    # 提供 ssh 免密认证
+    # 提供 ssh 免密认证   我们只暴露是否SSH
     ssh: []
     # 提供运行作业所需要的网络信息，hosts文件，headless service等
     svc: []
   # 如果有pod被 杀死，重启整个作业
   policies:
-    - event: PodEvicted
+    - event: PodEvicted  
       action: RestartJob
   tasks:
-    - replicas: 1
-      name: mpimaster
+    - replicas: 1  #mpimaster   2个的时候，volcano自己会加上-0，-1的显示
+      name: mpimaster #没啥用
+      hostname: a   #取名用
+      subdomain: regen  #用户不用关心
+      dnsconfig:
+          searches: regen  #用户不用关心  
       # 当 mpiexec 结束，认识整个mpi作业结束
       policies:
         - event: TaskCompleted
@@ -38,18 +42,18 @@ spec:
                   mpiexec --allow-run-as-root --host ${MPI_HOST} -np 2 mpi_hello_world;
               image: volcanosh/example-mpi:0.0.1
               name: mpimaster
-              ports:
+              ports:   #我们的场景下没用
                 - containerPort: 22
                   name: mpijob-port
-              workingDir: /home
-              resources:
+              workingDir: /home  #不用加这个需求
+              resources:   #只能做非share的GPU,CPU和MEM也不可以share
                 requests:
                   cpu: "500m"
                   memory: "1024Mi"
                 limits:
                   cpu: "500m"
                   memory: "1024Mi"
-          restartPolicy: OnFailure
+          restartPolicy: OnFailure #这个做成Never
           imagePullSecrets:
             - name: default-secret
     - replicas: 2
